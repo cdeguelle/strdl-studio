@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&display=swap');
+
+/* Default theme (Void) — overridden at runtime by useTheme */
+:root {
+    --accent:        #c084fc;
+    --accent-dim:    rgba(192, 132, 252, 0.33);
+    --accent-bg:     rgba(192, 132, 252, 0.13);
+    --bg-0:          #0a0a12;
+    --bg-0a:         rgba(10, 10, 18, 0.82);
+    --bg-1:          #111116;
+    --bg-1a:         rgba(17, 17, 22, 0.92);
+    --bg-2:          #1a1a1f;
+    --bg-2a:         rgba(10, 10, 18, 0.88);
+    --bg-hover:      #1a1a22;
+    --border:        #2a2a33;
+    --border-subtle: #15151a;
+}
+
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: var(--bg-2);
+}
+
+.cm-editor {
+    height: 100%;
+}
+
+.cm-scroller {
+    flex: 1 !important;
+}
+
+.cm-tooltip-autocomplete {
+    max-width: 300px !important;
+}
+
+.cm-completionInfo {
+    max-width: 350px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+}
+
+.autocomplete-info-container {
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+}
+
+.autocomplete-info-function-name {
+    font-size: 14px;
+    color: #c084fc;
+    margin: 0 0 8px 0;
+}
+
+.autocomplete-info-function-synonyms {
+    color: #555;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.autocomplete-info-function-description {
+    color: #888;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.autocomplete-info-section-title {
+    font-size: 10px;
+    color: #27c93f;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0 0 8px 0;
+}
+
+.autocomplete-info-params-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.autocomplete-info-param-item {
+    border-left: 2px solid #2a2a33;
+    padding-left: 8px;
+}
+
+.autocomplete-info-param-name {
+    color: #de7356;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.autocomplete-info-param-type {
+    color: #7dd3fc;
+    font-size: 10px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.autocomplete-info-param-desc {
+    color: #666;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.autocomplete-info-example-code {
+    background: #0d0d12;
+    border: 1px solid #2a2a33;
+    border-radius: 4px;
+    padding: 8px;
+    color: #aaa;
+    font-size: 11px;
+    overflow-x: auto;
+    margin: 4px 0;
+}
+
+/* Strudel scope/visualizer canvas — must always sit above the app UI regardless
+   of who creates it (our pre-creation or getDrawContext() in @strudel/draw). */
+#test-canvas {
+    z-index: 999 !important;
+}
+
+.tab-item .tab-close { opacity: 0; transition: opacity 0.1s; }
+.tab-item:hover .tab-close { opacity: 1; }
+.tab-item.tab-active .tab-close { opacity: 0.3; }
+.tab-item.tab-active:hover .tab-close { opacity: 1; }
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
