@@ -1,23 +1,28 @@
 import { ResizeHandle } from './ResizeHandle';
 import { SamplesPanel } from './SamplesPanel';
 import { SnippetsPanel } from './SnippetsPanel';
+import { IoPanel } from './IoPanel';
 import { useSamples } from '../hooks/useSamples';
 import { useSnippets } from '../hooks/useSnippets';
+import { useMidi } from '../hooks/useMidi';
 import { RefObject } from 'react';
 import { EditorHandle } from '../Editor';
+
+export type SidebarTab = 'samples' | 'snippets' | 'io';
 
 type SidebarProps = {
     open: boolean;
     width: number;
     onResizeStart: (e: React.MouseEvent) => void;
-    tab: 'samples' | 'snippets';
-    onTabChange: (t: 'samples' | 'snippets') => void;
+    tab: SidebarTab;
+    onTabChange: (t: SidebarTab) => void;
     samples: ReturnType<typeof useSamples>;
     snippets: ReturnType<typeof useSnippets>;
+    midi: ReturnType<typeof useMidi>;
     editorRef: RefObject<EditorHandle | null>;
 };
 
-export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples, snippets, editorRef }: SidebarProps) {
+export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples, snippets, midi, editorRef }: SidebarProps) {
     return (
         <>
             <div
@@ -29,7 +34,7 @@ export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples,
             >
                 <div style={{ width, display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-                        {(['samples', 'snippets'] as const).map((t) => (
+                        {(['samples', 'snippets', 'io'] as const).map((t) => (
                             <button
                                 key={t}
                                 onClick={() => onTabChange(t)}
@@ -83,6 +88,13 @@ export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples,
                             onDelete={snippets.deleteSnippet}
                             onFetchRemote={snippets.fetchRemoteSnippets}
                             onFetchStyles={snippets.fetchStyleSnippets}
+                            onInsert={(code) => editorRef.current?.insertAtCursor(code)}
+                        />
+                    )}
+
+                    {tab === 'io' && (
+                        <IoPanel
+                            midi={midi}
                             onInsert={(code) => editorRef.current?.insertAtCursor(code)}
                         />
                     )}

@@ -6,11 +6,7 @@
 
 ## Audio & intégrations
 
-- [ ] **MIDI out** — envoyer les patterns vers un DAW / synthétiseur externe via `midi()`
-- [ ] **MIDI in** — recevoir des CC pour contrôler des paramètres (`midin()`, `midikeys()`)
-- [ ] **OSC** — envoyer vers SuperCollider / SuperDirt via `osc()`
 - [ ] **Ableton Link** — synchronisation du tempo avec d'autres outils
-- [ ] **MQTT** — protocole IoT pour connecter des devices
 
 ---
 
@@ -30,6 +26,10 @@
 
 ## Fait ✓
 
+- [x] **MIDI out** — `midi("device name")` disponible dans le code ; panneau I/O dans la sidebar liste les sorties connectées
+- [x] **MIDI in** — `midin()` / `midikeys()` disponibles ; panneau I/O liste les entrées connectées
+- [x] **OSC** — `osc()` disponible ; panneau I/O guide le démarrage du bridge (`node node_modules/@strudel/osc/server.js`) et vérifie la connexion ws://localhost:8080
+- [x] **MQTT** — `mqtt()` disponible via `@strudel/mqtt` intégré dans l'eval scope
 - [x] **Éditeur Strudel** — éditeur CodeMirror complet avec autocomplétion et syntax highlighting
 - [x] **Éditeur Hydra** — panneau latéral CodeMirror 6 avec évaluation live
 - [x] **Multi-onglets** — sessions multiples avec gestion des fichiers récents

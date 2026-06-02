@@ -5,7 +5,7 @@ import { Editor, EditorHandle } from './Editor';
 import { HydraEditor, HydraEditorHandle } from './HydraEditor';
 import { Toolbar } from './components/Toolbar';
 import { TabBar } from './components/TabBar';
-import { Sidebar } from './components/Sidebar';
+import { Sidebar, type SidebarTab } from './components/Sidebar';
 import { ExportModal } from './components/ExportModal';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SearchBar } from './components/SearchBar';
@@ -16,6 +16,7 @@ import { usePlayback } from './hooks/usePlayback';
 import { useVisualizer } from './hooks/useVisualizer';
 import { useSamples } from './hooks/useSamples';
 import { useSnippets } from './hooks/useSnippets';
+import { useMidi } from './hooks/useMidi';
 import { useHydra } from './hooks/useHydra';
 import { useCanvasSetup } from './hooks/useCanvasSetup';
 import { useTheme } from './hooks/useTheme';
@@ -49,6 +50,7 @@ function App() {
     const { selectedVisualizer, setVisualizerMode } = useVisualizer(editorRef);
     const samples = useSamples(editorRef);
     const snippets = useSnippets(editorRef);
+    const midi = useMidi();
     const hydra = useHydra(editorRef, editorAreaRef);
     const { theme, setTheme, themes } = useTheme();
     const { settings, updateSetting } = useSettings();
@@ -56,7 +58,7 @@ function App() {
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarWidth, setSidebarWidth] = useState(200);
-    const [sidebarTab, setSidebarTab] = useState<'samples' | 'snippets'>('samples');
+    const [sidebarTab, setSidebarTab] = useState<SidebarTab>('samples');
     const [showExportModal, setShowExportModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
@@ -289,6 +291,7 @@ function App() {
                     onTabChange={setSidebarTab}
                     samples={samples}
                     snippets={snippets}
+                    midi={midi}
                     editorRef={editorRef}
                 />
                 <div
@@ -303,10 +306,7 @@ function App() {
                 >
                     <Editor ref={editorRef} />
                     {showSearch && (
-                        <SearchBar
-                            editorRef={editorRef}
-                            onClose={() => setShowSearch(false)}
-                        />
+                        <SearchBar editorRef={editorRef} onClose={() => setShowSearch(false)} />
                     )}
                 </div>
                 {hydra.hydraOpen && (

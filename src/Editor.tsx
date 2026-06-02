@@ -1,6 +1,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { toggleComment } from '@codemirror/commands';
 import { SearchCursor } from '@codemirror/search';
+import { evalScope } from '@strudel/core';
 import '@strudel/repl';
 import type { EditorSettings } from './hooks/useSettings';
 
@@ -147,6 +148,9 @@ export const Editor = forwardRef<EditorHandle, EditorProps>(({ onCodeChange }, r
         el.style.display = 'none';
         elementRef.current = el;
         containerRef.current.appendChild(el);
+
+        // Register OSC and MQTT pattern functions into the Strudel eval scope
+        evalScope(import('@strudel/osc'), import('@strudel/mqtt'));
 
         // StrudelMirror insère son container juste après — on attend le prochain tick
         setTimeout(() => {
