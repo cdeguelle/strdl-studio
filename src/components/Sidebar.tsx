@@ -2,6 +2,7 @@ import { ResizeHandle } from './ResizeHandle';
 import { SamplesPanel } from './SamplesPanel';
 import { SnippetsPanel } from './SnippetsPanel';
 import { IoPanel } from './IoPanel';
+import { ReferencePanel } from './ReferencePanel';
 import { useSamples } from '../hooks/useSamples';
 import { useSnippets } from '../hooks/useSnippets';
 import { useMidi } from '../hooks/useMidi';
@@ -9,7 +10,7 @@ import { useAbletonLink } from '../hooks/useAbletonLink';
 import { RefObject } from 'react';
 import { EditorHandle } from '../Editor';
 
-export type SidebarTab = 'samples' | 'snippets' | 'io';
+export type SidebarTab = 'samples' | 'snippets' | 'io' | 'ref';
 
 type SidebarProps = {
     open: boolean;
@@ -37,7 +38,7 @@ export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples,
             >
                 <div style={{ width, display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-                        {(['samples', 'snippets', 'io'] as const).map((t) => (
+                        {(['samples', 'snippets', 'io', 'ref'] as const).map((t) => (
                             <button
                                 key={t}
                                 onClick={() => onTabChange(t)}
@@ -100,6 +101,12 @@ export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples,
                             midi={midi}
                             link={link}
                             onLinkToggle={onLinkToggle}
+                            onInsert={(code) => editorRef.current?.insertAtCursor(code)}
+                        />
+                    )}
+
+                    {tab === 'ref' && (
+                        <ReferencePanel
                             onInsert={(code) => editorRef.current?.insertAtCursor(code)}
                         />
                     )}

@@ -4,6 +4,8 @@
 
 ## Fait ✓
 
+- [x] **Référence API** — onglet "ref" dans la sidebar ; 283 fonctions Strudel searchables avec filtre par catégorie (controls, midi, pattern, signal, synth, tonal...) ; cliquer sur une fonction l'insère dans l'éditeur ; detail view avec description, paramètres et exemples cliquables
+- [x] **Browser "sounds"** — sous-onglet "sounds" dans l'onglet samples ; liste tous les sons chargés en temps réel depuis le soundMap de superdough avec click-to-insert `s("nom")`
 - [x] **URL sharing** — bouton Share dans la toolbar ; encode avec lz-string vers `strudel.cc/#?code=...` ; import depuis n'importe quelle URL strudel.cc
 - [x] **Opacité Hydra** — slider temps réel dans la toolbar Hydra, persisté en localStorage
 - [x] **Pattern `H`** — `H(pattern)` disponible globalement ; template "Pattern H" dans l'éditeur Hydra

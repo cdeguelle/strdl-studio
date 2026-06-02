@@ -1,4 +1,6 @@
-import { Play, Square } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Play, Square, Loader } from 'lucide-react';
+import { useSoundCatalog, type SoundBank } from '../hooks/useSoundCatalog';
 
 type SamplesPanelProps = {
     loadedSamples: Record<string, string[]>;
@@ -17,10 +19,74 @@ const inputStyle: React.CSSProperties = {
     fontSize: '11px', color: '#aaa', fontFamily: "'JetBrains Mono', monospace", outline: 'none',
 };
 
+const CATEGORIES = ['all', 'dirt', 'drum-machines', 'vcsl', 'piano', 'mridangam', 'uzu', 'waveform', 'zzfx'];
+
+type SubTab = 'local' | 'sounds';
+
 export function SamplesPanel({ loadedSamples, sampleSearch, setSampleSearch, collapsedFolders, setCollapsedFolders, playingPreview, onPreview, onInsert }: SamplesPanelProps) {
+    const [subTab, setSubTab] = useState<SubTab>('local');
+    const catalog = useSoundCatalog();
+
+    useEffect(() => {
+        if (subTab === 'sounds') catalog.load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [subTab]);
+
     const toggleFolder = (folder: string) =>
         setCollapsedFolders((prev) => { const next = new Set(prev); next.has(folder) ? next.delete(folder) : next.add(folder); return next; });
 
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+                {(['local', 'sounds'] as const).map(t => (
+                    <button
+                        key={t}
+                        onClick={() => setSubTab(t)}
+                        style={{
+                            flex: 1, background: 'transparent', border: 'none',
+                            borderBottom: `2px solid ${subTab === t ? 'var(--accent-dim)' : 'transparent'}`,
+                            padding: '5px 0', color: subTab === t ? '#888' : '#333',
+                            fontSize: '9px', fontFamily: "'JetBrains Mono', monospace",
+                            letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer',
+                        }}
+                        onMouseEnter={e => { if (subTab !== t) e.currentTarget.style.color = '#666'; }}
+                        onMouseLeave={e => { if (subTab !== t) e.currentTarget.style.color = '#333'; }}
+                    >
+                        {t}
+                    </button>
+                ))}
+            </div>
+
+            {subTab === 'local' && (
+                <LocalTab
+                    loadedSamples={loadedSamples}
+                    sampleSearch={sampleSearch}
+                    setSampleSearch={setSampleSearch}
+                    collapsedFolders={collapsedFolders}
+                    toggleFolder={toggleFolder}
+                    playingPreview={playingPreview}
+                    onPreview={onPreview}
+                    onInsert={onInsert}
+                />
+            )}
+
+            {subTab === 'sounds' && (
+                <SoundsTab catalog={catalog} onInsert={onInsert} />
+            )}
+        </div>
+    );
+}
+
+function LocalTab({ loadedSamples, sampleSearch, setSampleSearch, collapsedFolders, toggleFolder, playingPreview, onPreview, onInsert }: {
+    loadedSamples: Record<string, string[]>;
+    sampleSearch: string;
+    setSampleSearch: (s: string) => void;
+    collapsedFolders: Set<string>;
+    toggleFolder: (f: string) => void;
+    playingPreview: string | null;
+    onPreview: (f: string) => void;
+    onInsert: (code: string) => void;
+}) {
     return (
         <div style={{ overflow: 'auto', flex: 1, padding: '8px 0' }}>
             {Object.keys(loadedSamples).length > 0 && (
@@ -87,6 +153,159 @@ export function SamplesPanel({ loadedSamples, sampleSearch, setSampleSearch, col
                         </div>
                     );
                 })}
+        </div>
+    );
+}
+
+function SoundsTab({ catalog, onInsert }: { catalog: ReturnType<typeof useSoundCatalog>; onInsert: (code: string) => void }) {
+    const [search, setSearch] = useState('');
+    const [activeCategory, setActiveCategory] = useState('all');
+    const [playingBank, setPlayingBank] = useState<string | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const filtered = catalog.banks.filter(b => {
+        if (activeCategory !== 'all' && b.category !== activeCategory) return false;
+        if (search) return b.name.toLowerCase().includes(search.toLowerCase());
+        return true;
+    });
+
+    const availableCategories = CATEGORIES.filter(
+        c => c === 'all' || catalog.banks.some(b => b.category === c)
+    );
+
+    const handlePreview = (bank: SoundBank) => {
+        if (playingBank === bank.name) {
+            audioRef.current?.pause();
+            audioRef.current = null;
+            setPlayingBank(null);
+            return;
+        }
+        if (!bank.firstUrl) return;
+        audioRef.current?.pause();
+        const audio = new Audio(bank.firstUrl);
+        audio.volume = 0.8;
+        audio.play().catch(() => {});
+        audio.onended = () => setPlayingBank(null);
+        audioRef.current = audio;
+        setPlayingBank(bank.name);
+    };
+
+    if (catalog.loading) {
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <Loader size={16} style={{ color: '#444', animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontSize: '10px', color: '#444', fontFamily: "'JetBrains Mono', monospace" }}>Chargement du catalogue...</span>
+            </div>
+        );
+    }
+
+    if (catalog.error && !catalog.loaded) {
+        return (
+            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '10px', color: '#ef4444', fontFamily: "'JetBrains Mono', monospace" }}>Erreur de chargement</span>
+                <button
+                    onClick={catalog.load}
+                    style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: '4px', padding: '4px 8px', fontSize: '10px', color: '#666', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                    Réessayer
+                </button>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            <div style={{ padding: '6px 8px 4px', flexShrink: 0 }}>
+                <input
+                    type="text"
+                    placeholder="Rechercher..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    style={inputStyle}
+                />
+            </div>
+
+            {/* Category filter */}
+            <div style={{ padding: '4px 8px', display: 'flex', flexWrap: 'wrap', gap: '3px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+                {availableCategories.map(cat => (
+                    <button
+                        key={cat}
+                        onClick={() => setActiveCategory(cat)}
+                        style={{
+                            background: activeCategory === cat ? 'var(--accent-bg)' : 'transparent',
+                            border: `1px solid ${activeCategory === cat ? 'var(--accent)' : 'var(--border)'}`,
+                            borderRadius: '3px',
+                            padding: '2px 6px',
+                            fontSize: '9px',
+                            color: activeCategory === cat ? 'var(--accent)' : '#555',
+                            cursor: 'pointer',
+                            fontFamily: "'JetBrains Mono', monospace",
+                        }}
+                    >
+                        {cat}
+                    </button>
+                ))}
+            </div>
+
+            <div style={{ overflow: 'auto', flex: 1, padding: '4px 0' }}>
+                {filtered.map(bank => {
+                    const isPreviewing = playingBank === bank.name;
+                    const canPreview = bank.firstUrl !== null;
+                    return (
+                        <div
+                            key={`${bank.category}-${bank.name}`}
+                            style={{
+                                padding: '4px 8px 4px 12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                color: isPreviewing ? '#27c93f' : '#555',
+                                cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => {
+                                if (!isPreviewing) e.currentTarget.style.color = 'var(--accent)';
+                                const btn = e.currentTarget.querySelector('.sound-preview-btn') as HTMLElement;
+                                if (btn && canPreview) btn.style.opacity = '1';
+                            }}
+                            onMouseLeave={e => {
+                                if (!isPreviewing) e.currentTarget.style.color = '#555';
+                                const btn = e.currentTarget.querySelector('.sound-preview-btn') as HTMLElement;
+                                if (btn && !isPreviewing) btn.style.opacity = '0';
+                            }}
+                        >
+                            <span
+                                onClick={() => onInsert(`s("${bank.name}")`)}
+                                style={{ flex: 1, fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                title={`Insérer s("${bank.name}")`}
+                            >
+                                {bank.name}
+                            </span>
+                            {bank.count > 0 && (
+                                <span style={{ fontSize: '9px', color: '#333', fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>
+                                    {bank.count}
+                                </span>
+                            )}
+                            {canPreview && (
+                                <span
+                                    className="sound-preview-btn"
+                                    onClick={e => { e.stopPropagation(); handlePreview(bank); }}
+                                    style={{
+                                        opacity: isPreviewing ? 1 : 0,
+                                        color: isPreviewing ? '#27c93f' : '#aaa',
+                                        flexShrink: 0,
+                                        lineHeight: 1,
+                                        transition: 'opacity 0.1s',
+                                        cursor: 'pointer',
+                                    }}
+                                    title={isPreviewing ? 'Stop' : 'Preview'}
+                                >
+                                    {isPreviewing ? <Square size={11} /> : <Play size={11} />}
+                                </span>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
