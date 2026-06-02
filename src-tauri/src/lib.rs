@@ -69,6 +69,8 @@ fn link_set_bpm(bpm: f64, state: tauri::State<'_, LinkHandle>) -> Result<(), Str
     Ok(())
 }
 
+// ── Session file handling ─────────────────────────────────────────────────
+
 #[tauri::command]
 fn read_session(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
@@ -78,6 +80,8 @@ fn read_session(path: String) -> Result<String, String> {
 fn write_session(path: String, content: String) -> Result<(), String> {
     std::fs::write(&path, &content).map_err(|e| e.to_string())
 }
+
+// ── Sample scanning ───────────────────────────────────────────────────────
 
 fn scan_dir_recursive(path: &std::path::Path, results: &mut Vec<String>) {
     if let Ok(entries) = std::fs::read_dir(path) {
@@ -104,6 +108,8 @@ fn scan_samples(path: String) -> Result<Vec<String>, String> {
     scan_dir_recursive(std::path::Path::new(&path), &mut audio_files);
     Ok(audio_files)
 }
+
+// ── Recent sessions management ───────────────────────────────────────────
 
 fn get_recent_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
     let data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
@@ -137,6 +143,8 @@ fn add_recent_session(app: tauri::AppHandle, path: String) -> Result<(), String>
     std::fs::write(&recent_path, json).map_err(|e| e.to_string())?;
     Ok(())
 }
+
+// ── Tauri app setup ─────────────────────────────────────────────────────
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
