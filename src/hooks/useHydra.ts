@@ -12,13 +12,22 @@ export function useHydra(
     const [hydraWidth, setHydraWidth] = useState(340);
     const [hydraRunning, setHydraRunning] = useState(false);
     const [hydraTemplates, setHydraTemplates] = useState<HydraTemplate[]>(() => {
-        try { return JSON.parse(localStorage.getItem('strdl-hydra-templates') ?? '[]'); }
-        catch { return []; }
+        try {
+            return JSON.parse(localStorage.getItem('strdl-hydra-templates') ?? '[]');
+        } catch {
+            return [];
+        }
     });
     const hydraInitialized = useRef(false);
     const isResizingHydra = useRef(false);
     const hydraRafRef = useRef<number | null>(null);
     const hydraOffscreen = useRef<HTMLCanvasElement | null>(null);
+
+    const savedOpacity = parseFloat(localStorage.getItem('strdl-hydra-opacity') ?? '0.75');
+    const [hydraOpacity, setHydraOpacityState] = useState(savedOpacity);
+    const hydraOpacityRef = useRef(savedOpacity);
+    const [detectAudio, setDetectAudioState] = useState(false);
+    const detectAudioRef = useRef(false);
 
     const startHydraSync = useCallback(() => {
         if (!hydraOffscreen.current) {
@@ -28,7 +37,14 @@ export function useHydra(
         }
         const offCtx = hydraOffscreen.current.getContext('2d');
         if (!(window as any).a) {
-            (window as any).a = { fft: [0, 0, 0, 0], vol: 0, setSmooth: () => {}, setCutoff: () => {}, setScale: () => {}, setBins: () => {} };
+            (window as any).a = {
+                fft: [0, 0, 0, 0],
+                vol: 0,
+                setSmooth: () => {},
+                setCutoff: () => {},
+                setScale: () => {},
+                setBins: () => {},
+            };
         }
         const loop = () => {
             (window as any).speed = editorRef.current?.getCps() ?? 0.5;
@@ -66,32 +82,58 @@ export function useHydra(
         }
     }, []);
 
-    const runHydra = useCallback(async (code: string) => {
-        if (!hydraInitialized.current) {
-            try {
-                await initHydra({ feedStrudel: true, detectAudio: false });
-                const canvas = document.getElementById('hydra-canvas') as HTMLCanvasElement | null;
-                if (canvas && editorAreaRef.current) {
-                    editorAreaRef.current.appendChild(canvas);
-                    canvas.style.cssText =
-                        'position:absolute;inset:0;z-index:2;pointer-events:none;width:100%;height:100%;mix-blend-mode:screen;opacity:0.75';
+    const setHydraOpacity = useCallback((val: number) => {
+        hydraOpacityRef.current = val;
+        setHydraOpacityState(val);
+        localStorage.setItem('strdl-hydra-opacity', String(val));
+        const canvas = document.getElementById('hydra-canvas') as HTMLCanvasElement | null;
+        if (canvas) canvas.style.opacity = String(val);
+    }, []);
+
+    const toggleDetectAudio = useCallback(() => {
+        const newVal = !detectAudioRef.current;
+        detectAudioRef.current = newVal;
+        setDetectAudioState(newVal);
+        if (hydraInitialized.current) {
+            stopHydraSync();
+            clearHydra();
+            hydraInitialized.current = false;
+            setHydraRunning(false);
+        }
+    }, [stopHydraSync]);
+
+    const runHydra = useCallback(
+        async (code: string) => {
+            if (!hydraInitialized.current) {
+                try {
+                    await initHydra({ feedStrudel: true, detectAudio: detectAudioRef.current });
+                    const canvas = document.getElementById(
+                        'hydra-canvas',
+                    ) as HTMLCanvasElement | null;
+                    if (canvas && editorAreaRef.current) {
+                        editorAreaRef.current.appendChild(canvas);
+                        canvas.style.cssText = `position:absolute;inset:0;z-index:2;pointer-events:none;width:100%;height:100%;mix-blend-mode:screen;opacity:${hydraOpacityRef.current}`;
+                    }
+                    hydraInitialized.current = true;
+                    setHydraRunning(true);
+                    if (!detectAudioRef.current) {
+                        startHydraSync();
+                    }
+                } catch (err) {
+                    toast.error('Impossible de charger Hydra (connexion requise)');
+                    console.error('[hydra init]', err);
+                    return;
                 }
-                hydraInitialized.current = true;
-                setHydraRunning(true);
-                startHydraSync();
-            } catch (err) {
-                toast.error('Impossible de charger Hydra (connexion requise)');
-                console.error('[hydra init]', err);
-                return;
             }
-        }
-        try {
-            // eslint-disable-next-line no-new-func
-            new Function(code)();
-        } catch (err) {
-            toast.error('Erreur Hydra : ' + (err as Error).message);
-        }
-    }, [editorAreaRef, startHydraSync]);
+            try {
+                // eslint-disable-next-line no-new-func
+                new Function(code)();
+            } catch (err) {
+                toast.error('Erreur Hydra : ' + (err as Error).message);
+            }
+        },
+        [editorAreaRef, startHydraSync],
+    );
 
     const stopHydra = useCallback(() => {
         stopHydraSync();
@@ -107,36 +149,45 @@ export function useHydra(
         setHydraOpen(false);
     }, [stopHydra]);
 
-    const handleHydraResizeStart = useCallback((e: React.MouseEvent) => {
-        isResizingHydra.current = true;
-        const startX = e.clientX;
-        const startWidth = hydraWidth;
-        const onMouseMove = (ev: MouseEvent) => {
-            if (!isResizingHydra.current) return;
-            setHydraWidth(Math.max(200, Math.min(700, startWidth - (ev.clientX - startX))));
-        };
-        const onMouseUp = () => {
-            isResizingHydra.current = false;
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-        };
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-    }, [hydraWidth]);
+    const handleHydraResizeStart = useCallback(
+        (e: React.MouseEvent) => {
+            isResizingHydra.current = true;
+            const startX = e.clientX;
+            const startWidth = hydraWidth;
+            const onMouseMove = (ev: MouseEvent) => {
+                if (!isResizingHydra.current) return;
+                setHydraWidth(Math.max(200, Math.min(700, startWidth - (ev.clientX - startX))));
+            };
+            const onMouseUp = () => {
+                isResizingHydra.current = false;
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        },
+        [hydraWidth],
+    );
 
-    const saveHydraTemplate = useCallback((name: string, code: string) => {
-        const t: HydraTemplate = { id: Date.now().toString(), name, code };
-        const next = [...hydraTemplates, t];
-        setHydraTemplates(next);
-        localStorage.setItem('strdl-hydra-templates', JSON.stringify(next));
-        toast.success('Template Hydra sauvegardé !');
-    }, [hydraTemplates]);
+    const saveHydraTemplate = useCallback(
+        (name: string, code: string) => {
+            const t: HydraTemplate = { id: Date.now().toString(), name, code };
+            const next = [...hydraTemplates, t];
+            setHydraTemplates(next);
+            localStorage.setItem('strdl-hydra-templates', JSON.stringify(next));
+            toast.success('Template Hydra sauvegardé !');
+        },
+        [hydraTemplates],
+    );
 
-    const deleteHydraTemplate = useCallback((id: string) => {
-        const next = hydraTemplates.filter((t) => t.id !== id);
-        setHydraTemplates(next);
-        localStorage.setItem('strdl-hydra-templates', JSON.stringify(next));
-    }, [hydraTemplates]);
+    const deleteHydraTemplate = useCallback(
+        (id: string) => {
+            const next = hydraTemplates.filter((t) => t.id !== id);
+            setHydraTemplates(next);
+            localStorage.setItem('strdl-hydra-templates', JSON.stringify(next));
+        },
+        [hydraTemplates],
+    );
 
     useEffect(() => {
         return () => {
@@ -146,13 +197,21 @@ export function useHydra(
     }, [stopHydraSync]);
 
     return {
-        hydraOpen, setHydraOpen,
+        hydraOpen,
+        setHydraOpen,
         hydraWidth,
         hydraRunning,
         hydraTemplates,
-        runHydra, stopHydra, closeHydraPanel,
+        hydraOpacity,
+        setHydraOpacity,
+        detectAudio,
+        toggleDetectAudio,
+        runHydra,
+        stopHydra,
+        closeHydraPanel,
         handleHydraResizeStart,
-        saveHydraTemplate, deleteHydraTemplate,
+        saveHydraTemplate,
+        deleteHydraTemplate,
         stopHydraSync,
     };
 }

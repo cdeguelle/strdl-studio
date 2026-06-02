@@ -10,6 +10,7 @@ import {
     Layers,
     Palette,
     Settings,
+    Share2,
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import type { Theme } from '../themes';
@@ -32,6 +33,7 @@ type ToolbarProps = {
     onSave: () => void;
     onLoadSamples: () => void;
     onExport: () => void;
+    onShare: () => void;
     onTapTempo: () => void;
     onOpenSettings: () => void;
     theme: Theme;
@@ -57,6 +59,7 @@ export function Toolbar({
     onSave,
     onLoadSamples,
     onExport,
+    onShare,
     onTapTempo,
     onOpenSettings,
     theme,
@@ -375,6 +378,7 @@ export function Toolbar({
                             title: 'Load Samples',
                         },
                         { icon: <Download size={15} />, onClick: onExport, title: 'Export Audio' },
+                        { icon: <Share2 size={15} />, onClick: onShare, title: 'Share / Import URL' },
                     ] as const
                 ).map(({ icon, onClick, title }) => (
                     <button

@@ -2,26 +2,12 @@
 
 ## En cours / immédiat
 
----
-
----
-
-## Visuels
-
-- [ ] **Opacité Hydra** — slider temps réel pour l'opacité du canvas Hydra
-- [ ] **Pattern `H`** — utiliser un pattern Strudel comme input Hydra bidirectionnel (fonction `H`)
-- [ ] **`detectAudio: true`** — capture audio réelle dans Hydra (vs sampling canvas actuel)
-
----
-
-## Partage & communauté
-
-- [ ] **URL sharing** — encoder le pattern dans une URL pour le partager (comme le REPL officiel)
-
----
-
 ## Fait ✓
 
+- [x] **URL sharing** — bouton Share dans la toolbar ; encode avec lz-string vers `strudel.cc/#?code=...` ; import depuis n'importe quelle URL strudel.cc
+- [x] **Opacité Hydra** — slider temps réel dans la toolbar Hydra, persisté en localStorage
+- [x] **Pattern `H`** — `H(pattern)` disponible globalement ; template "Pattern H" dans l'éditeur Hydra
+- [x] **`detectAudio: true`** — toggle `fft/live` dans la toolbar Hydra ; bascule entre canvas-FFT et Web Audio API réel
 - [x] **Ableton Link** — toggle dans le panneau I/O ; sync tempo bidirectionnel avec Ableton Live / Bitwig / tout app Link-compatible via `rusty_link` (Tauri Rust backend)
 - [x] **MIDI out** — `midi("device name")` disponible dans le code ; panneau I/O dans la sidebar liste les sorties connectées
 - [x] **MIDI in** — `midin()` / `midikeys()` disponibles ; panneau I/O liste les entrées connectées

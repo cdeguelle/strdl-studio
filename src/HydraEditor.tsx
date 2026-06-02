@@ -21,6 +21,7 @@ export const BUILTIN_HYDRA: HydraTemplate[] = [
     { id: 'bh6', name: 'Gradient pulse', code: `gradient(0.02)\n  .mult(osc(20, 0.05, 0.9))\n  .out()` },
     { id: 'bh7', name: 'Audio reactive (scope)', code: `// Active le scope dans Strudel pour alimenter s0 et a.fft\nosc(() => a.fft[0] * 20 + 5, 0.1, 1)\n  .kaleid(() => Math.floor(a.fft[2] * 8) + 3)\n  .color(() => a.fft[1] + 0.5, 0.5, () => a.fft[3] + 0.5)\n  .rotate(() => time * 0.2)\n  .out()` },
     { id: 'bh8', name: 'Scope → Hydra (s0)', code: `// Active le scope dans Strudel d'abord\nsrc(s0)\n  .kaleid(6)\n  .rotate(() => time * 0.05)\n  .out()` },
+    { id: 'bh9', name: 'Pattern H (Strudel → Hydra)', code: `// H(pattern) renvoie une fn animée au tempo Strudel\n// Les valeurs cyclent en sync avec le scheduler\nosc(H("30 60 90"), 0.1, 1)\n  .rotate(H("0 0.5 1"))\n  .color(H("0.9 0.4 0.7"), H("0.3 0.8 0.5"), 0.8)\n  .out()` },
 ];
 
 // Custom theme overrides on top of oneDark
@@ -52,6 +53,10 @@ type HydraEditorProps = {
     templates: HydraTemplate[];
     onSaveTemplate: (name: string, code: string) => void;
     onDeleteTemplate: (id: string) => void;
+    hydraOpacity: number;
+    onOpacityChange: (v: number) => void;
+    detectAudio: boolean;
+    onToggleDetectAudio: () => void;
 };
 
 export type HydraEditorHandle = {
@@ -60,7 +65,7 @@ export type HydraEditorHandle = {
 };
 
 export const HydraEditor = forwardRef<HydraEditorHandle, HydraEditorProps>(
-    ({ running, onEval, templates, onSaveTemplate, onDeleteTemplate }, ref) => {
+    ({ running, onEval, templates, onSaveTemplate, onDeleteTemplate, hydraOpacity, onOpacityChange, detectAudio, onToggleDetectAudio }, ref) => {
         const [savingTemplate, setSavingTemplate] = useState(false);
         const [templateName, setTemplateName] = useState('');
         const containerRef = useRef<HTMLDivElement>(null);
@@ -142,6 +147,42 @@ export const HydraEditor = forwardRef<HydraEditorHandle, HydraEditorProps>(
                         </span>
                     )}
                     <div style={{ flex: 1 }} />
+                    {/* Opacity slider */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input
+                            type="range"
+                            min={0} max={1} step={0.05}
+                            value={hydraOpacity}
+                            onChange={(e) => onOpacityChange(parseFloat(e.target.value))}
+                            title={`Opacité Hydra: ${Math.round(hydraOpacity * 100)}%`}
+                            style={{ width: '56px', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                        />
+                        <span style={{ fontSize: '9px', color: '#444', fontFamily: "'JetBrains Mono', monospace", width: '26px', textAlign: 'right', flexShrink: 0 }}>
+                            {Math.round(hydraOpacity * 100)}%
+                        </span>
+                    </div>
+                    {/* Audio mode toggle */}
+                    <button
+                        onClick={onToggleDetectAudio}
+                        title={detectAudio ? 'Audio: Web Audio API (live) — cliquer pour basculer en FFT canvas' : 'Audio: FFT canvas (scope) — cliquer pour activer le microphone/Web Audio'}
+                        style={{
+                            background: detectAudio ? 'var(--accent-bg)' : 'transparent',
+                            border: `1px solid ${detectAudio ? 'var(--accent-dim)' : 'transparent'}`,
+                            borderRadius: '3px',
+                            padding: '2px 5px',
+                            color: detectAudio ? 'var(--accent)' : '#444',
+                            cursor: 'pointer',
+                            fontSize: '8px',
+                            fontFamily: "'JetBrains Mono', monospace",
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => { if (!detectAudio) e.currentTarget.style.color = '#aaa'; }}
+                        onMouseLeave={(e) => { if (!detectAudio) e.currentTarget.style.color = '#444'; }}
+                    >
+                        {detectAudio ? 'live' : 'fft'}
+                    </button>
                     {!savingTemplate ? (
                         <button
                             onClick={() => setSavingTemplate(true)}

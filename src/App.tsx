@@ -7,6 +7,7 @@ import { Toolbar } from './components/Toolbar';
 import { TabBar } from './components/TabBar';
 import { Sidebar, type SidebarTab } from './components/Sidebar';
 import { ExportModal } from './components/ExportModal';
+import { ShareModal } from './components/ShareModal';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SearchBar } from './components/SearchBar';
 import { ResizeHandle } from './components/ResizeHandle';
@@ -63,6 +64,7 @@ function App() {
     const [sidebarTab, setSidebarTab] = useState<SidebarTab>('samples');
     const [showExportModal, setShowExportModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [showShare, setShowShare] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [exportCycles, setExportCycles] = useState(16);
     const isResizing = useRef(false);
@@ -276,6 +278,7 @@ function App() {
                 onSave={handleSave}
                 onLoadSamples={samples.handleLoadSamples}
                 onExport={() => setShowExportModal(true)}
+                onShare={() => setShowShare(true)}
                 onTapTempo={handleTapTempo}
                 onOpenSettings={() => setShowSettings(true)}
                 theme={theme}
@@ -339,6 +342,10 @@ function App() {
                                 templates={hydra.hydraTemplates}
                                 onSaveTemplate={hydra.saveHydraTemplate}
                                 onDeleteTemplate={hydra.deleteHydraTemplate}
+                                hydraOpacity={hydra.hydraOpacity}
+                                onOpacityChange={hydra.setHydraOpacity}
+                                detectAudio={hydra.detectAudio}
+                                onToggleDetectAudio={hydra.toggleDetectAudio}
                             />
                         </div>
                     </>
@@ -371,6 +378,16 @@ function App() {
                     settings={settings}
                     onUpdate={updateSetting}
                     onClose={() => setShowSettings(false)}
+                />
+            )}
+            {showShare && (
+                <ShareModal
+                    code={editorRef.current?.getCode() ?? ''}
+                    onLoad={(code) => {
+                        editorRef.current?.setCode(code);
+                        setShowShare(false);
+                    }}
+                    onClose={() => setShowShare(false)}
                 />
             )}
         </main>

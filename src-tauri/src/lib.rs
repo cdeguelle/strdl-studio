@@ -1,4 +1,3 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use rusty_link::{AblLink, SessionState};
 use std::sync::Mutex;
 use tauri::Manager;
@@ -68,11 +67,6 @@ fn link_set_bpm(bpm: f64, state: tauri::State<'_, LinkHandle>) -> Result<(), Str
         }
     }
     Ok(())
-}
-
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
 #[tauri::command]
@@ -150,7 +144,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(LinkHandle(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![greet, read_session, write_session, scan_samples, get_recent_sessions, add_recent_session, link_enable, link_disable, link_get_state, link_set_bpm])
+        .invoke_handler(tauri::generate_handler![read_session, write_session, scan_samples, get_recent_sessions, add_recent_session, link_enable, link_disable, link_get_state, link_set_bpm])
         .setup(|app| {
             tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("index.html".into()))
                 .title("strdl-studio")
