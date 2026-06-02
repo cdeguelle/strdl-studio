@@ -17,6 +17,7 @@ import { useVisualizer } from './hooks/useVisualizer';
 import { useSamples } from './hooks/useSamples';
 import { useSnippets } from './hooks/useSnippets';
 import { useMidi } from './hooks/useMidi';
+import { useAbletonLink } from './hooks/useAbletonLink';
 import { useHydra } from './hooks/useHydra';
 import { useCanvasSetup } from './hooks/useCanvasSetup';
 import { useTheme } from './hooks/useTheme';
@@ -51,6 +52,7 @@ function App() {
     const samples = useSamples(editorRef);
     const snippets = useSnippets(editorRef);
     const midi = useMidi();
+    const link = useAbletonLink(editorRef);
     const hydra = useHydra(editorRef, editorAreaRef);
     const { theme, setTheme, themes } = useTheme();
     const { settings, updateSetting } = useSettings();
@@ -152,6 +154,14 @@ function App() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPlaying, hydra.hydraOpen]);
+
+    const handleLinkToggle = useCallback(() => {
+        if (link.enabled) {
+            link.disable();
+        } else {
+            link.enable(bpm);
+        }
+    }, [link, bpm]);
 
     const handleTapTempo = useCallback(() => {
         const now = Date.now();
@@ -292,6 +302,8 @@ function App() {
                     samples={samples}
                     snippets={snippets}
                     midi={midi}
+                    link={link}
+                    onLinkToggle={handleLinkToggle}
                     editorRef={editorRef}
                 />
                 <div

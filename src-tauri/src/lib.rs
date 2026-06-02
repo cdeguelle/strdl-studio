@@ -1,5 +1,74 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+use rusty_link::{AblLink, SessionState};
+use std::sync::Mutex;
 use tauri::Manager;
+
+// ── Ableton Link state ──────────────────────────────────────────────────────
+
+pub struct LinkHandle(Mutex<Option<AblLink>>);
+
+#[derive(serde::Serialize)]
+struct LinkInfo {
+    enabled: bool,
+    bpm: f64,
+    peers: u64,
+}
+
+#[tauri::command]
+fn link_enable(bpm: f64, state: tauri::State<'_, LinkHandle>) -> Result<(), String> {
+    let mut guard = state.0.lock().map_err(|e| e.to_string())?;
+    if guard.is_none() {
+        *guard = Some(AblLink::new(bpm));
+    }
+    if let Some(link) = guard.as_ref() {
+        let mut session = SessionState::new();
+        link.capture_app_session_state(&mut session);
+        session.set_tempo(bpm, link.clock_micros());
+        link.commit_app_session_state(&session);
+        link.enable(true);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn link_disable(state: tauri::State<'_, LinkHandle>) -> Result<(), String> {
+    let guard = state.0.lock().map_err(|e| e.to_string())?;
+    if let Some(link) = guard.as_ref() {
+        link.enable(false);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn link_get_state(state: tauri::State<'_, LinkHandle>) -> Result<LinkInfo, String> {
+    let guard = state.0.lock().map_err(|e| e.to_string())?;
+    match guard.as_ref() {
+        Some(link) => {
+            let mut session = SessionState::new();
+            link.capture_app_session_state(&mut session);
+            Ok(LinkInfo {
+                enabled: link.is_enabled(),
+                bpm: session.tempo(),
+                peers: link.num_peers(),
+            })
+        }
+        None => Ok(LinkInfo { enabled: false, bpm: 120.0, peers: 0 }),
+    }
+}
+
+#[tauri::command]
+fn link_set_bpm(bpm: f64, state: tauri::State<'_, LinkHandle>) -> Result<(), String> {
+    let guard = state.0.lock().map_err(|e| e.to_string())?;
+    if let Some(link) = guard.as_ref() {
+        if link.is_enabled() {
+            let mut session = SessionState::new();
+            link.capture_app_session_state(&mut session);
+            session.set_tempo(bpm, link.clock_micros());
+            link.commit_app_session_state(&session);
+        }
+    }
+    Ok(())
+}
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -80,7 +149,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![greet, read_session, write_session, scan_samples, get_recent_sessions, add_recent_session])
+        .manage(LinkHandle(Mutex::new(None)))
+        .invoke_handler(tauri::generate_handler![greet, read_session, write_session, scan_samples, get_recent_sessions, add_recent_session, link_enable, link_disable, link_get_state, link_set_bpm])
         .setup(|app| {
             tauri::WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("index.html".into()))
                 .title("strdl-studio")

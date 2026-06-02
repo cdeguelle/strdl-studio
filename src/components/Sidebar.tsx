@@ -5,6 +5,7 @@ import { IoPanel } from './IoPanel';
 import { useSamples } from '../hooks/useSamples';
 import { useSnippets } from '../hooks/useSnippets';
 import { useMidi } from '../hooks/useMidi';
+import { useAbletonLink } from '../hooks/useAbletonLink';
 import { RefObject } from 'react';
 import { EditorHandle } from '../Editor';
 
@@ -19,10 +20,12 @@ type SidebarProps = {
     samples: ReturnType<typeof useSamples>;
     snippets: ReturnType<typeof useSnippets>;
     midi: ReturnType<typeof useMidi>;
+    link: ReturnType<typeof useAbletonLink>;
+    onLinkToggle: () => void;
     editorRef: RefObject<EditorHandle | null>;
 };
 
-export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples, snippets, midi, editorRef }: SidebarProps) {
+export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples, snippets, midi, link, onLinkToggle, editorRef }: SidebarProps) {
     return (
         <>
             <div
@@ -95,6 +98,8 @@ export function Sidebar({ open, width, onResizeStart, tab, onTabChange, samples,
                     {tab === 'io' && (
                         <IoPanel
                             midi={midi}
+                            link={link}
+                            onLinkToggle={onLinkToggle}
                             onInsert={(code) => editorRef.current?.insertAtCursor(code)}
                         />
                     )}

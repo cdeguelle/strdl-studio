@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import type { MidiState } from '../hooks/useMidi';
 
+type LinkInfo = {
+    enabled: boolean;
+    bpm: number;
+    peers: number;
+};
+
 type IoPanelProps = {
     midi: MidiState;
+    link: LinkInfo;
+    onLinkToggle: () => void;
     onInsert: (code: string) => void;
 };
 
@@ -33,7 +41,7 @@ function StatusDot({ ok }: { ok: boolean }) {
     );
 }
 
-export function IoPanel({ midi, onInsert }: IoPanelProps) {
+export function IoPanel({ midi, link, onLinkToggle, onInsert }: IoPanelProps) {
     const [oscStatus, setOscStatus] = useState<'idle' | 'ok' | 'error'>('idle');
 
     const checkOsc = () => {
@@ -211,6 +219,41 @@ export function IoPanel({ midi, onInsert }: IoPanelProps) {
                     <span style={{ color: '#333' }}>Default host: </span>
                     <span style={{ color: '#555' }}>wss://localhost:8883/</span>
                 </div>
+            </Section>
+
+            {/* Ableton Link */}
+            <Section title="Ableton Link">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <StatusDot ok={link.enabled} />
+                    <span style={{ color: link.enabled ? '#27c93f' : '#555', fontSize: '10px', flex: 1 }}>
+                        {link.enabled
+                            ? `${Math.round(link.bpm)} BPM · ${link.peers} peer${link.peers !== 1 ? 's' : ''}`
+                            : 'disabled'}
+                    </span>
+                    <button
+                        onClick={onLinkToggle}
+                        style={{
+                            background: link.enabled ? 'var(--accent-bg)' : 'transparent',
+                            border: `1px solid ${link.enabled ? 'var(--accent)' : 'var(--border)'}`,
+                            borderRadius: '3px',
+                            padding: '2px 8px',
+                            color: link.enabled ? 'var(--accent)' : '#555',
+                            cursor: 'pointer',
+                            fontSize: '9px',
+                            fontFamily: "'JetBrains Mono', monospace",
+                            transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => { if (!link.enabled) e.currentTarget.style.color = '#aaa'; }}
+                        onMouseLeave={(e) => { if (!link.enabled) e.currentTarget.style.color = '#555'; }}
+                    >
+                        {link.enabled ? 'disable' : 'enable'}
+                    </button>
+                </div>
+                {!link.enabled && (
+                    <p style={{ color: '#333', fontSize: '10px', margin: 0, lineHeight: 1.5 }}>
+                        Syncs tempo with Ableton Live, Bitwig, and other Link-enabled apps on the local network.
+                    </p>
+                )}
             </Section>
         </div>
     );

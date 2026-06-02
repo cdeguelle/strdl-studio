@@ -4,10 +4,6 @@
 
 ---
 
-## Audio & intégrations
-
-- [ ] **Ableton Link** — synchronisation du tempo avec d'autres outils
-
 ---
 
 ## Visuels
@@ -26,6 +22,7 @@
 
 ## Fait ✓
 
+- [x] **Ableton Link** — toggle dans le panneau I/O ; sync tempo bidirectionnel avec Ableton Live / Bitwig / tout app Link-compatible via `rusty_link` (Tauri Rust backend)
 - [x] **MIDI out** — `midi("device name")` disponible dans le code ; panneau I/O dans la sidebar liste les sorties connectées
 - [x] **MIDI in** — `midin()` / `midikeys()` disponibles ; panneau I/O liste les entrées connectées
 - [x] **OSC** — `osc()` disponible ; panneau I/O guide le démarrage du bridge (`node node_modules/@strudel/osc/server.js`) et vérifie la connexion ws://localhost:8080
