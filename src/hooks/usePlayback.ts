@@ -22,7 +22,7 @@ export function usePlayback(
             const currentCode = editorRef.current?.getCode() ?? '';
             const activeTab = tabsRef.current[activeTabIdxRef.current];
             setIsDirty(currentCode !== (activeTab?.savedCode ?? INITIAL_CODE));
-            setBpm(Math.round((editorRef.current?.getCps() ?? 0.5) * 60));
+            setBpm(Math.round((editorRef.current?.getCps() ?? 0.5) * 240));
         }, 100);
 
         return () => {

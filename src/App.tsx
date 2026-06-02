@@ -7,6 +7,8 @@ import { Toolbar } from './components/Toolbar';
 import { TabBar } from './components/TabBar';
 import { Sidebar } from './components/Sidebar';
 import { ExportModal } from './components/ExportModal';
+import { SettingsPanel } from './components/SettingsPanel';
+import { SearchBar } from './components/SearchBar';
 import { ResizeHandle } from './components/ResizeHandle';
 import { useTabs } from './hooks/useTabs';
 import { useSession } from './hooks/useSession';
@@ -17,6 +19,8 @@ import { useSnippets } from './hooks/useSnippets';
 import { useHydra } from './hooks/useHydra';
 import { useCanvasSetup } from './hooks/useCanvasSetup';
 import { useTheme } from './hooks/useTheme';
+import { useSettings } from './hooks/useSettings';
+import { useEvalHistory } from './hooks/useEvalHistory';
 import { renderPatternAudioFixed } from './utils/audio';
 import {
     setAudioContext,
@@ -47,13 +51,19 @@ function App() {
     const snippets = useSnippets(editorRef);
     const hydra = useHydra(editorRef, editorAreaRef);
     const { theme, setTheme, themes } = useTheme();
+    const { settings, updateSetting } = useSettings();
+    const { push: pushHistory, navigate: navigateHistory } = useEvalHistory(editorRef);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarWidth, setSidebarWidth] = useState(200);
     const [sidebarTab, setSidebarTab] = useState<'samples' | 'snippets'>('samples');
     const [showExportModal, setShowExportModal] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
     const [exportCycles, setExportCycles] = useState(16);
     const isResizing = useRef(false);
+    const tapTimesRef = useRef<number[]>([]);
+    const tapResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useCanvasSetup(editorAreaRef);
 
@@ -64,6 +74,11 @@ function App() {
     useEffect(() => {
         editorRef.current?.setTheme(theme.strudelTheme);
     }, [theme]);
+
+    // Apply editor settings whenever they change
+    useEffect(() => {
+        editorRef.current?.updateSettings(settings);
+    }, [settings]);
 
     // Window title
     useEffect(() => {
@@ -93,10 +108,26 @@ function App() {
                 e.preventDefault();
                 closeTab(activeTabIdxRef.current);
             }
+            if (mod && e.key === '/') {
+                e.preventDefault();
+                editorRef.current?.toggleComment();
+            }
+            if (mod && e.key === 'f') {
+                e.preventDefault();
+                setShowSearch((v) => !v);
+            }
+            if (mod && e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateHistory('up');
+            }
+            if (mod && e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateHistory('down');
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [handleOpen, handleSave, newTab, closeTab, activeTabIdxRef]);
+    }, [handleOpen, handleSave, newTab, closeTab, activeTabIdxRef, navigateHistory]);
 
     // Reload on audio device change
     useEffect(() => {
@@ -119,6 +150,24 @@ function App() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isPlaying, hydra.hydraOpen]);
+
+    const handleTapTempo = useCallback(() => {
+        const now = Date.now();
+        tapTimesRef.current.push(now);
+        if (tapTimesRef.current.length > 8) tapTimesRef.current.shift();
+        if (tapTimesRef.current.length >= 2) {
+            const intervals = tapTimesRef.current
+                .slice(1)
+                .map((t, i) => t - tapTimesRef.current[i]);
+            const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+            const cps = 60000 / avg / 240;
+            editorRef.current?.evalRaw(`setcps(${cps.toFixed(4)})`);
+        }
+        if (tapResetRef.current) clearTimeout(tapResetRef.current);
+        tapResetRef.current = setTimeout(() => {
+            tapTimesRef.current = [];
+        }, 2000);
+    }, []);
 
     const handleSidebarResizeStart = (e: React.MouseEvent) => {
         isResizing.current = true;
@@ -206,12 +255,17 @@ function App() {
                 recentMenuOpen={recentMenuOpen}
                 setRecentMenuOpen={setRecentMenuOpen}
                 onLoadSession={loadSession}
-                onPlay={() => editorRef.current?.play()}
+                onPlay={() => {
+                    pushHistory(editorRef.current?.getCode() ?? '');
+                    editorRef.current?.play();
+                }}
                 onStop={() => editorRef.current?.stop()}
                 onOpen={handleOpen}
                 onSave={handleSave}
                 onLoadSamples={samples.handleLoadSamples}
                 onExport={() => setShowExportModal(true)}
+                onTapTempo={handleTapTempo}
+                onOpenSettings={() => setShowSettings(true)}
                 theme={theme}
                 themes={themes}
                 onSetTheme={setTheme}
@@ -248,6 +302,12 @@ function App() {
                     }}
                 >
                     <Editor ref={editorRef} />
+                    {showSearch && (
+                        <SearchBar
+                            editorRef={editorRef}
+                            onClose={() => setShowSearch(false)}
+                        />
+                    )}
                 </div>
                 {hydra.hydraOpen && (
                     <>
@@ -292,6 +352,13 @@ function App() {
                     setExportCycles={setExportCycles}
                     onExport={handleExport}
                     onClose={() => setShowExportModal(false)}
+                />
+            )}
+            {showSettings && (
+                <SettingsPanel
+                    settings={settings}
+                    onUpdate={updateSetting}
+                    onClose={() => setShowSettings(false)}
                 />
             )}
         </main>
